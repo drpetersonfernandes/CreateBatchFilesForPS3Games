@@ -239,11 +239,31 @@ public partial class MainWindow
         return dialog.ShowDialog() == true ? dialog.FileName : null;
     }
 
-    private static readonly char[] Separator = [' ', '.', '-', '_', ':'];
-
     private string SanitizeFileName(string filename)
     {
+        // Remove unwanted keywords like (Trial), Trial, Demo, case-insensitively.
+        filename = filename.Replace("(Trial)", "", StringComparison.OrdinalIgnoreCase);
+        filename = filename.Replace("Trial", "", StringComparison.OrdinalIgnoreCase);
+        filename = filename.Replace("Demo", "", StringComparison.OrdinalIgnoreCase);
+
+        // Apply Title Case formatting. Convert to lower first to handle all-caps correctly.
+        // Using InvariantCulture for consistent behavior regardless of user's system settings.
+        var textInfo = CultureInfo.InvariantCulture.TextInfo;
+        filename = textInfo.ToTitleCase(filename.ToLowerInvariant());
+
+        // Perform original sanitization (remove special chars, etc.)
         filename = filename.Replace("™", "").Replace("®", "").Replace(":", " -");
+
+        // Clean up whitespace.
+        // Trim leading/trailing whitespace that might be left after replacements.
+        filename = filename.Trim();
+        // Replace multiple spaces with a single space.
+        while (filename.Contains("  ", StringComparison.Ordinal))
+        {
+            filename = filename.Replace("  ", " ", StringComparison.Ordinal);
+        }
+
+        // Remove any invalid file name characters.
         var invalidChars = Path.GetInvalidFileNameChars();
         return string.Concat(filename.Split(invalidChars));
     }
