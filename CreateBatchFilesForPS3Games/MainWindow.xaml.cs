@@ -247,15 +247,25 @@ public partial class MainWindow
         filename = filename.Replace("Demo", "", StringComparison.OrdinalIgnoreCase);
 
         // Apply Title Case formatting. Convert to lower first to handle all-caps correctly.
-        // Using InvariantCulture for consistent behavior regardless of user's system settings.
         var textInfo = CultureInfo.InvariantCulture.TextInfo;
         filename = textInfo.ToTitleCase(filename.ToLowerInvariant());
+
+        // Post-process to fix Roman numerals that were incorrectly cased by ToTitleCase.
+        var words = filename.Split(' ');
+        for (var i = 0; i < words.Length; i++)
+        {
+            if (IsRomanNumeral(words[i]))
+            {
+                words[i] = words[i].ToUpperInvariant();
+            }
+        }
+
+        filename = string.Join(" ", words);
 
         // Perform original sanitization (remove special chars, etc.)
         filename = filename.Replace("™", "").Replace("®", "").Replace(":", " -");
 
         // Clean up whitespace.
-        // Trim leading/trailing whitespace that might be left after replacements.
         filename = filename.Trim();
         // Replace multiple spaces with a single space.
         while (filename.Contains("  ", StringComparison.Ordinal))
@@ -266,6 +276,41 @@ public partial class MainWindow
         // Remove any invalid file name characters.
         var invalidChars = Path.GetInvalidFileNameChars();
         return string.Concat(filename.Split(invalidChars));
+    }
+
+    private static bool IsRomanNumeral(string word)
+    {
+        if (string.IsNullOrWhiteSpace(word))
+        {
+            return false;
+        }
+
+        // ToTitleCase correctly handles single-letter numerals like I, V, X.
+        // We only need to correct multi-letter ones that it mishandles (e.g., "iii" -> "Iii").
+        var upper = word.ToUpperInvariant();
+        switch (upper)
+        {
+            case "II":
+            case "III":
+            case "IV":
+            case "VI":
+            case "VII":
+            case "VIII":
+            case "IX":
+            case "XI":
+            case "XII":
+            case "XIII":
+            case "XIV":
+            case "XV":
+            case "XVI":
+            case "XVII":
+            case "XVIII":
+            case "XIX":
+            case "XX":
+                return true;
+            default:
+                return false;
+        }
     }
 
     private Dictionary<string, string>? ReadSfo(string sfoFilePath)
