@@ -87,6 +87,16 @@ public partial class MainWindow
                 return;
             }
 
+            if (!VerifyWriteAccess(outputFolder))
+            {
+                ShowError("Cannot write to the selected folder. Please try these solutions:\n\n" +
+                          "1. Run the application as Administrator\n" +
+                          "2. Choose a different output folder (e.g., your Desktop or Documents)\n" +
+                          "3. Check the folder security permissions in Windows Explorer");
+                UpdateStatusBarMessage("Error: Insufficient folder permissions.");
+                return;
+            }
+
             CreateBatchFilesButton.IsEnabled = false;
             UpdateStatusBarMessage("Processing... please wait.");
 
@@ -201,18 +211,55 @@ public partial class MainWindow
 
             try
             {
-                await using var sw = new StreamWriter(batchFilePath);
-                var rpcs3Directory = Path.GetDirectoryName(rpcs3ExePath);
-                await sw.WriteLineAsync("@echo off");
-                await sw.WriteLineAsync($"cd /d \"{rpcs3Directory}\"");
-                await sw.WriteLineAsync($"start \"\" \"{rpcs3ExePath}\" --no-gui \"{ebootPath}\"");
-                LogMessage($"Batch file created: {batchFilePath}");
+                // Check and handle existing files
+                if (File.Exists(batchFilePath))
+                {
+                    try
+                    {
+                        // Remove the read-only attribute if present
+                        var fileInfo = new FileInfo(batchFilePath);
+                        if (fileInfo.IsReadOnly)
+                        {
+                            fileInfo.IsReadOnly = false;
+                        }
+
+                        File.Delete(batchFilePath);
+                    }
+                    catch (Exception deleteEx)
+                    {
+                        LogMessage($"⚠️ Skipping '{batchFileName}.bat': Cannot overwrite existing file - {deleteEx.Message}");
+                        continue; // Skip this file and continue with others
+                    }
+                }
+
+                // Create the batch file with explicit sharing permissions
+                await using (var fs = new FileStream(batchFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                await using (var sw = new StreamWriter(fs))
+                {
+                    var rpcs3Directory = Path.GetDirectoryName(rpcs3ExePath);
+                    await sw.WriteLineAsync("@echo off");
+                    await sw.WriteLineAsync($"cd /d \"{rpcs3Directory}\"");
+                    await sw.WriteLineAsync($"start \"\" \"{rpcs3ExePath}\" --no-gui \"{ebootPath}\"");
+                }
+
+                LogMessage($"✓ Batch file created: {batchFilePath}");
                 filesCreated++;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                LogMessage($"❌ Access denied for '{batchFileName}.bat': {ex.Message}");
+                LogMessage("   → Try running the application as Administrator");
+                // Don't report permission issues as bugs - they're user environment issues
+            }
+            catch (IOException ex)
+            {
+                LogMessage($"❌ IO error creating '{batchFileName}.bat': {ex.Message}");
+                await ReportBugAsync($"IO error creating batch file: {batchFileName}", ex);
             }
             catch (Exception ex)
             {
-                LogMessage($"Failed to create batch file for {Path.GetFileName(subdirectory)}: {ex.Message}");
-                await ReportBugAsync($"Failed to create batch file for {batchFileName}", ex);
+                LogMessage($"❌ Failed to create batch file for {Path.GetFileName(subdirectory)}: {ex.Message}");
+                await ReportBugAsync($"Unexpected error creating batch file: {batchFileName}", ex);
             }
         }
 
@@ -267,10 +314,32 @@ public partial class MainWindow
 
         // Clean up whitespace.
         filename = filename.Trim();
+
         // Replace multiple spaces with a single space.
         while (filename.Contains("  ", StringComparison.Ordinal))
         {
             filename = filename.Replace("  ", " ", StringComparison.Ordinal);
+        }
+
+        // Remove trailing spaces and dots (invalid in Windows)
+        filename = filename.TrimEnd(' ', '.');
+
+        // Handle Windows reserved device names
+        var reservedNames = new[]
+        {
+            "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5",
+            "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4",
+            "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+        };
+        if (reservedNames.Contains(filename.ToUpperInvariant()))
+        {
+            filename = $"_{filename}_";
+        }
+
+        // Ensure the filename is not empty after sanitization
+        if (string.IsNullOrWhiteSpace(filename))
+        {
+            filename = "UntitledGame";
         }
 
         // Remove any invalid file name characters.
@@ -399,6 +468,11 @@ public partial class MainWindow
     {
         if (App.BugReportService == null) return;
 
+        if (exception is UnauthorizedAccessException)
+        {
+            return;
+        }
+
         try
         {
             var fullReport = new StringBuilder();
@@ -462,6 +536,23 @@ public partial class MainWindow
         {
             LogMessage($"Error opening About window: {ex.Message}");
             _ = ReportBugAsync("Error opening About window", ex);
+        }
+    }
+
+    private bool VerifyWriteAccess(string folderPath)
+    {
+        try
+        {
+            // Test write permissions by creating and deleting a temporary file
+            var testFile = Path.Combine(folderPath, $".temp_test_{Guid.NewGuid().ToString("N")[..8]}.tmp");
+            File.WriteAllText(testFile, string.Empty);
+            File.Delete(testFile);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            LogMessage($"Write permission check failed for '{folderPath}': {ex.Message}");
+            return false;
         }
     }
 }
