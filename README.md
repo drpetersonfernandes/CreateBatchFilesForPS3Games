@@ -18,8 +18,7 @@ Create Batch Files for PS3 Games is a Windows application that provides a simple
 
 ## Requirements
 
--   Windows 7 or later
--   [.NET 9.0 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)
+-   [.NET 10.0 Runtime](https://dotnet.microsoft.com/download/dotnet/9.0)
 -   RPCS3 emulator (`rpcs3.exe`)
 
 ## Installation
