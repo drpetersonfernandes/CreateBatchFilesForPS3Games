@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
@@ -36,11 +37,29 @@ public partial class MainWindow
         UpdateStatusBarMessage("Ready");
     }
 
-    internal void ShowUpdateAvailable(string? latestVersion)
+    internal void ShowUpdateAvailable(string? latestVersion, string? releaseUrl)
     {
         if (string.IsNullOrWhiteSpace(latestVersion)) return;
 
-        UpdateStatusBarMessage($"A new version ({latestVersion}) is available! Click 'About' and then 'Check for Updates'.");
+        UpdateStatusBarMessage($"A new version ({latestVersion}) is available!");
+
+        var result = MessageBox.Show(
+            $"A new version ({latestVersion}) is available!\n\nWould you like to go to the release page?",
+            "Update Available",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Information);
+
+        if (result == MessageBoxResult.Yes && !string.IsNullOrWhiteSpace(releaseUrl))
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(releaseUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                _ = App.BugReportService?.SendBugReportAsync($"Error opening URL: {releaseUrl}", "unknown", ex);
+            }
+        }
     }
 
     private void UpdateStatusBarMessage(string message)

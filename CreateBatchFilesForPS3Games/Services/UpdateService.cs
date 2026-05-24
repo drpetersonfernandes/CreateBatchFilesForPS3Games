@@ -55,7 +55,7 @@ public class UpdateService : IUpdateService
         }
     }
 
-    private static readonly string[] Prefixes = ["release_", "release", "v", "V"];
+    private static readonly string[] Prefixes = ["release_", "release", "v"];
 
     internal static Version? ParseVersion(string? tag)
     {

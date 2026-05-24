@@ -97,7 +97,7 @@ public partial class App
                 await Current.Dispatcher.InvokeAsync(() =>
                 {
                     if (Current.MainWindow is MainWindow mainWindow)
-                        mainWindow.ShowUpdateAvailable(latestVersion);
+                        mainWindow.ShowUpdateAvailable(latestVersion, releaseUrl);
                 });
             }
         }

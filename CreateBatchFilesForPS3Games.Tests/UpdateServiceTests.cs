@@ -114,38 +114,6 @@ public class UpdateServiceTests
         Assert.Equal(new Version(1, 0), result);
     }
 
-    [Theory]
-    [InlineData("1.0.0.0", "2.0.0.0", true)]
-    [InlineData("2.0.0.0", "1.0.0.0", false)]
-    [InlineData("1.5.0.0", "1.5.0.0", false)]
-    [InlineData("1.4.0.0", "1.4.1.0", true)]
-    [InlineData("1.4.0.0", "1.4.0.1", true)]
-    [InlineData("1.4", "1.5", true)]
-    [InlineData("1.9", "1.10", true)]
-    [InlineData("2.0", "1.9", false)]
-    public void VersionComparison_DetectsUpdatesCorrectly(string current, string latest, bool expectedUpdate)
-    {
-        var currentVersion = new Version(current);
-        var latestVersion = new Version(latest);
-
-        var updateAvailable = latestVersion > currentVersion;
-
-        Assert.Equal(expectedUpdate, updateAvailable);
-    }
-
-    [Fact]
-    public Task CheckForUpdateAsync_WithRealRepo_CompletesWithoutThrowing()
-    {
-        try
-        {
-            return Task.CompletedTask;
-        }
-        catch (Exception exception)
-        {
-            return Task.FromException(exception);
-        }
-    }
-
     [Fact]
     public void MultipleInstances_CanBeCreated()
     {
