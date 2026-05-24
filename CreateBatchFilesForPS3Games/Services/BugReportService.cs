@@ -5,7 +5,7 @@ using System.Net.Http.Json;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CreateBatchFilesForPS3Games;
+namespace CreateBatchFilesForPS3Games.Services;
 
 public class BugReportService : IBugReportService
 {

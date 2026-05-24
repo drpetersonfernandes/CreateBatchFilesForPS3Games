@@ -29,7 +29,7 @@ public class IsRomanNumeralTests
     [InlineData("CM")]
     public void ValidRomanNumerals_ReturnTrue(string word)
     {
-        Assert.True(new FileNameSanitizer().IsRomanNumeral(word));
+        Assert.True(new Services.FileNameSanitizer().IsRomanNumeral(word));
     }
 
     [Theory]
@@ -59,7 +59,7 @@ public class IsRomanNumeralTests
     [InlineData("cm")]
     public void ValidRomanNumerals_Lowercase_ReturnTrue(string word)
     {
-        Assert.True(new FileNameSanitizer().IsRomanNumeral(word));
+        Assert.True(new Services.FileNameSanitizer().IsRomanNumeral(word));
     }
 
     [Theory]
@@ -69,7 +69,7 @@ public class IsRomanNumeralTests
     [InlineData("Xi")]
     public void ValidRomanNumerals_MixedCase_ReturnTrue(string word)
     {
-        Assert.True(new FileNameSanitizer().IsRomanNumeral(word));
+        Assert.True(new Services.FileNameSanitizer().IsRomanNumeral(word));
     }
 
     [Theory]
@@ -82,7 +82,7 @@ public class IsRomanNumeralTests
     [InlineData("M")]
     public void SingleLetterNumerals_ReturnFalse(string word)
     {
-        Assert.False(new FileNameSanitizer().IsRomanNumeral(word));
+        Assert.False(new Services.FileNameSanitizer().IsRomanNumeral(word));
     }
 
     [Theory]
@@ -93,7 +93,7 @@ public class IsRomanNumeralTests
     [InlineData("CD")]
     public void RomanNumerals_BeyondXX_ReturnTrue(string word)
     {
-        Assert.True(new FileNameSanitizer().IsRomanNumeral(word));
+        Assert.True(new Services.FileNameSanitizer().IsRomanNumeral(word));
     }
 
     [Theory]
@@ -103,7 +103,7 @@ public class IsRomanNumeralTests
     [InlineData(null!)]
     public void EmptyOrWhitespace_ReturnFalse(string? word)
     {
-        Assert.False(word != null && new FileNameSanitizer().IsRomanNumeral(word));
+        Assert.False(word != null && new Services.FileNameSanitizer().IsRomanNumeral(word));
     }
 
     [Theory]
@@ -114,6 +114,6 @@ public class IsRomanNumeralTests
     [InlineData("I2")]
     public void NonRomanStrings_ReturnFalse(string word)
     {
-        Assert.False(new FileNameSanitizer().IsRomanNumeral(word));
+        Assert.False(new Services.FileNameSanitizer().IsRomanNumeral(word));
     }
 }

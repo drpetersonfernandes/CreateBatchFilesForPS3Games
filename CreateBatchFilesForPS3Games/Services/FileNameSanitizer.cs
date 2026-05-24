@@ -2,7 +2,7 @@ using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 
-namespace CreateBatchFilesForPS3Games;
+namespace CreateBatchFilesForPS3Games.Services;
 
 public partial class FileNameSanitizer : IFileNameSanitizer
 {

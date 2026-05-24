@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace CreateBatchFilesForPS3Games;
+namespace CreateBatchFilesForPS3Games.Services;
 
 public class SfoParser : ISfoParser
 {

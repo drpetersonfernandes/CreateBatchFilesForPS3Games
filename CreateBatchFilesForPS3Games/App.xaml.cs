@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
+using CreateBatchFilesForPS3Games.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CreateBatchFilesForPS3Games;

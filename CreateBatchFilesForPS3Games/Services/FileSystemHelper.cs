@@ -1,6 +1,6 @@
 using System.IO;
 
-namespace CreateBatchFilesForPS3Games;
+namespace CreateBatchFilesForPS3Games.Services;
 
 public class FileSystemHelper : IFileSystemHelper
 {

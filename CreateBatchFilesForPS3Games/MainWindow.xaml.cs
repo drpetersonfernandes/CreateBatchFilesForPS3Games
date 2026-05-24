@@ -3,15 +3,11 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows;
+using CreateBatchFilesForPS3Games.Models;
+using CreateBatchFilesForPS3Games.Services;
 using Microsoft.Win32;
 
 namespace CreateBatchFilesForPS3Games;
-
-internal enum GameType
-{
-    DiscGame,
-    HddGame
-}
 
 public partial class MainWindow
 {

@@ -2,7 +2,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
-namespace CreateBatchFilesForPS3Games;
+namespace CreateBatchFilesForPS3Games.Services;
 
 public class UpdateService : IUpdateService
 {

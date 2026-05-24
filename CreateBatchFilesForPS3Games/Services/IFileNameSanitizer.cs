@@ -1,4 +1,4 @@
-namespace CreateBatchFilesForPS3Games;
+namespace CreateBatchFilesForPS3Games.Services;
 
 public interface IFileNameSanitizer
 {
