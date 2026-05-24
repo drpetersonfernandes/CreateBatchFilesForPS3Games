@@ -30,9 +30,10 @@ Create Batch Files for PS3 Games is a Windows application that provides a simple
 ## Usage
 
 1.  **Select RPCS3 Executable**: Click "Browse" next to "RPCS3 Path" to select the `rpcs3.exe` file.
-2.  **Select Games Folder**: Click "Browse" next to "Games Folder" to choose the root directory containing your PS3 game folders (e.g., `J:\Sony PS3 Roms`).
-3.  **Create Batch Files**: Click "Create Batch Files" to start the process. The application will scan the selected folder and the RPCS3 `dev_hdd0\game` folder for PS3 games and generate `.bat` files in your selected "Games Folder".
-4.  **Monitor Progress**: The application displays detailed log messages during the batch file creation process.
+2.  **Select Disc Games Folder (Optional)**: Click "Browse" next to "Disc Games" to choose the root directory containing your PS3 disc game folders (e.g., `J:\Sony PS3 Roms`). The application will scan each subfolder for `PS3_GAME\USRDIR\EBOOT.BIN` and `PS3_GAME\PARAM.SFO`.
+3.  **Select Output Folder**: Click "Browse" next to "Output Folder" to choose where the generated `.bat` files will be saved.
+4.  **Create Batch Files**: Click "Create Batch Files" to start the process. The application will scan both the selected disc games folder and the RPCS3 `dev_hdd0\game` folder for PS3 games.
+5.  **Monitor Progress**: The application displays detailed log messages during the batch file creation process.
 
 ### Example Batch File Command
 

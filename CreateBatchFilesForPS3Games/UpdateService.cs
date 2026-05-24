@@ -25,11 +25,12 @@ public class UpdateService : IUpdateService
     {
         try
         {
-            _httpClient.DefaultRequestHeaders.UserAgent.Clear();
-            _httpClient.DefaultRequestHeaders.UserAgent.Add(
+            using var request = new HttpRequestMessage(HttpMethod.Get, _apiUrl);
+            request.Headers.UserAgent.Add(
                 new ProductInfoHeaderValue("PS3BatchLauncherCreator", currentVersion.ToString()));
 
-            var json = await _httpClient.GetStringAsync(_apiUrl);
+            var response = await _httpClient.SendAsync(request);
+            var json = await response.Content.ReadAsStringAsync();
 
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;

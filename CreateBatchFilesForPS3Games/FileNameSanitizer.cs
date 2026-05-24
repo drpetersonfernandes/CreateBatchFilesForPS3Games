@@ -12,8 +12,8 @@ public partial class FileNameSanitizer : IFileNameSanitizer
         filename = TrialWordPattern().Replace(filename, "");
         filename = DemoWordPattern().Replace(filename, "");
 
-        var textInfo = CultureInfo.CurrentCulture.TextInfo;
-        filename = textInfo.ToTitleCase(filename.ToLower(CultureInfo.CurrentCulture));
+        var textInfo = CultureInfo.InvariantCulture.TextInfo;
+        filename = textInfo.ToTitleCase(filename.ToLowerInvariant());
 
         var words = filename.Split(' ');
         for (var i = 0; i < words.Length; i++)

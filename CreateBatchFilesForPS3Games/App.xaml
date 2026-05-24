@@ -12,85 +12,39 @@
             Terminal: Black (#0a0a0a) + Neon Green (#39FF14) - PRESERVED
         -->
 
-        <!-- ==================== TERMINAL COLORS (PRESERVED) ==================== -->
         <SolidColorBrush x:Key="TerminalBackgroundBrush" Color="#0a0a0a"/>
-        <SolidColorBrush x:Key="TerminalBorderBrush" Color="#1a1a1a"/>
         <SolidColorBrush x:Key="TerminalForegroundBrush" Color="#39FF14"/>
-        <SolidColorBrush x:Key="TerminalSelectedBrush" Color="#2a2a2a"/>
 
-        <!-- ==================== WINDOW & BACKGROUND COLORS ==================== -->
-        <!-- Deep Slate Theme Base -->
         <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#121518"/>
         <SolidColorBrush x:Key="CardBackgroundBrush" Color="#1e2227"/>
-        <SolidColorBrush x:Key="CardBackgroundHoverBrush" Color="#252a30"/>
         <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#0d0f12"/>
 
-        <!-- ==================== BORDER COLORS ==================== -->
         <SolidColorBrush x:Key="BorderBrush" Color="#2d333b"/>
         <SolidColorBrush x:Key="BorderBrushLight" Color="#3d454f"/>
 
-        <!-- ==================== TEXT COLORS ==================== -->
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="#e6edf3"/>
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="#8b949e"/>
-        <SolidColorBrush x:Key="TextMutedBrush" Color="#6e7681"/>
         <SolidColorBrush x:Key="HeaderTextBrush" Color="#ffffff"/>
 
-        <!-- Status Text Colors - Harmonious with theme -->
         <SolidColorBrush x:Key="SuccessTextBrush" Color="#4caf50"/>
         <SolidColorBrush x:Key="FailedTextBrush" Color="#f85149"/>
-        <SolidColorBrush x:Key="SkippedTextBrush" Color="#ffa726"/>
         <SolidColorBrush x:Key="LinkTextBrush" Color="#58a6ff"/>
-        <SolidColorBrush x:Key="InfoTextBrush" Color="#00bcd4"/>
 
-        <!-- ==================== PRIMARY ACCENT COLORS ==================== -->
-        <!-- Teal/Cyan as primary - complements the green terminal -->
         <SolidColorBrush x:Key="PrimaryAccentBrush" Color="#00bcd4"/>
-        <SolidColorBrush x:Key="PrimaryAccentHoverBrush" Color="#00e5ff"/>
-        <SolidColorBrush x:Key="PrimaryAccentDarkBrush" Color="#008ba3"/>
 
-        <!-- Secondary accent - Soft Green (harmonizes with terminal) -->
-        <SolidColorBrush x:Key="SecondaryAccentBrush" Color="#4caf50"/>
-        <SolidColorBrush x:Key="SecondaryAccentHoverBrush" Color="#66bb6a"/>
-        <SolidColorBrush x:Key="SecondaryAccentDarkBrush" Color="#388e3c"/>
-
-        <!-- ==================== BUTTON COLORS ==================== -->
-        <!-- Action Button (Teal) -->
         <SolidColorBrush x:Key="ActionButtonBrush" Color="#00bcd4"/>
-        <SolidColorBrush x:Key="ActionButtonHoverBrush" Color="#00e5ff"/>
-        <SolidColorBrush x:Key="ActionButtonPressedBrush" Color="#008ba3"/>
 
-        <!-- Start/Success Button (Green - harmonizes with terminal) -->
         <SolidColorBrush x:Key="StartButtonBrush" Color="#4caf50"/>
-        <SolidColorBrush x:Key="StartButtonHoverBrush" Color="#66bb6a"/>
-        <SolidColorBrush x:Key="StartButtonPressedBrush" Color="#388e3c"/>
 
-        <!-- Cancel/Error Button (Soft Red) -->
-        <SolidColorBrush x:Key="CancelButtonBrush" Color="#f85149"/>
-        <SolidColorBrush x:Key="CancelButtonHoverBrush" Color="#ff6b6b"/>
-        <SolidColorBrush x:Key="CancelButtonPressedBrush" Color="#da3633"/>
-
-        <!-- About/Info Button (Purple - complementary to teal) -->
         <SolidColorBrush x:Key="AboutButtonBrush" Color="#7c4dff"/>
-        <SolidColorBrush x:Key="AboutButtonHoverBrush" Color="#9e7bff"/>
-        <SolidColorBrush x:Key="AboutButtonPressedBrush" Color="#5e35b1"/>
 
-        <!-- Exit Button (Slate Gray) -->
         <SolidColorBrush x:Key="ExitButtonBrush" Color="#607d8b"/>
-        <SolidColorBrush x:Key="ExitButtonHoverBrush" Color="#78909c"/>
-        <SolidColorBrush x:Key="ExitButtonPressedBrush" Color="#455a64"/>
 
-        <!-- Disabled State -->
         <SolidColorBrush x:Key="DisabledButtonBrush" Color="#3d454f"/>
         <SolidColorBrush x:Key="DisabledTextBrush" Color="#6e7681"/>
 
-        <!-- ==================== NAVIGATION COLORS ==================== -->
-        <SolidColorBrush x:Key="NavigationUnderlineBrush" Color="#00bcd4"/>
-        <SolidColorBrush x:Key="NavigationHoverBrush" Color="#1e2227"/>
-
-        <!-- ==================== STATUS BAR ==================== -->
         <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#0d0f12"/>
 
-        <!-- ==================== PROGRESS BAR ==================== -->
         <SolidColorBrush x:Key="ProgressBackgroundBrush" Color="#2d333b"/>
         <SolidColorBrush x:Key="ProgressForegroundBrush" Color="#00bcd4"/>
 
@@ -345,101 +299,6 @@
             <Setter Property="Margin" Value="0,0,0,15"/>
         </Style>
 
-        <!-- Default DataGrid Style -->
-        <Style TargetType="DataGrid">
-            <Setter Property="Background" Value="{StaticResource TerminalBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="RowBackground" Value="{StaticResource CardBackgroundBrush}"/>
-            <Setter Property="AlternatingRowBackground" Value="{StaticResource CardBackgroundHoverBrush}"/>
-            <Setter Property="GridLinesVisibility" Value="None"/>
-            <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource BorderBrush}"/>
-            <Setter Property="VerticalGridLinesBrush" Value="{StaticResource BorderBrush}"/>
-            <Setter Property="HeadersVisibility" Value="Column"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="RowHeight" Value="28"/>
-            <Setter Property="CanUserAddRows" Value="False"/>
-            <Setter Property="CanUserDeleteRows" Value="False"/>
-            <Setter Property="CanUserResizeRows" Value="False"/>
-            <Setter Property="SelectionMode" Value="Extended"/>
-            <Setter Property="SelectionUnit" Value="FullRow"/>
-            <Setter Property="CellStyle">
-                <Setter.Value>
-                    <Style TargetType="DataGridCell">
-                        <Setter Property="BorderThickness" Value="0"/>
-                        <Setter Property="Padding" Value="5,0"/>
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="DataGridCell">
-                                    <Border Background="{TemplateBinding Background}" 
-                                            BorderBrush="{TemplateBinding BorderBrush}" 
-                                            BorderThickness="{TemplateBinding BorderThickness}" 
-                                            Padding="{TemplateBinding Padding}"
-                                            SnapsToDevicePixels="True">
-                                        <ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
-                                    </Border>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="{StaticResource PrimaryAccentBrush}"/>
-                                <Setter Property="Foreground" Value="#121518"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="ColumnHeaderStyle">
-                <Setter.Value>
-                    <Style TargetType="DataGridColumnHeader">
-                        <Setter Property="Background" Value="{StaticResource HeaderBackgroundBrush}"/>
-                        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-                        <Setter Property="FontWeight" Value="SemiBold"/>
-                        <Setter Property="Padding" Value="10,8"/>
-                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
-                        <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
-                        <Setter Property="HorizontalContentAlignment" Value="Left"/>
-                    </Style>
-                </Setter.Value>
-            </Setter>
-            <Setter Property="RowStyle">
-                <Setter.Value>
-                    <Style TargetType="DataGridRow">
-                        <Setter Property="BorderThickness" Value="0"/>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="{StaticResource CardBackgroundHoverBrush}"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="ThemedDataGridColumnHeaderStyle" TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="{StaticResource HeaderBackgroundBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="10,8"/>
-            <Setter Property="BorderThickness" Value="0,0,1,1"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
-            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        </Style>
-
-        <Style x:Key="SelectColumnHeaderStyle" TargetType="DataGridColumnHeader" BasedOn="{StaticResource ThemedDataGridColumnHeaderStyle}">
-            <Setter Property="ToolTip" Value="Check or uncheck to select files for processing"/>
-        </Style>
-
-        <Style x:Key="FileNameColumnHeaderStyle" TargetType="DataGridColumnHeader" BasedOn="{StaticResource ThemedDataGridColumnHeaderStyle}">
-            <Setter Property="ToolTip" Value="Name of the file"/>
-        </Style>
-
-        <Style x:Key="FileSizeColumnHeaderStyle" TargetType="DataGridColumnHeader" BasedOn="{StaticResource ThemedDataGridColumnHeaderStyle}">
-            <Setter Property="ToolTip" Value="File size"/>
-        </Style>
-
         <!-- ==================== NAMED STYLES ==================== -->
 
         <!-- Primary Action Button Style -->
@@ -493,48 +352,6 @@
             <Setter Property="Background" Value="{StaticResource StartButtonBrush}"/>
         </Style>
 
-        <!-- Cancel Button Style -->
-        <Style x:Key="CancelButtonStyle" BasedOn="{StaticResource ActionButtonStyle}" TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource CancelButtonBrush}"/>
-        </Style>
-
-        <!-- Modern TabControl Style -->
-        <Style TargetType="TabItem">
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="Border" BorderThickness="0,0,0,3" Margin="0,0,10,0" Padding="15,10" Background="Transparent" CornerRadius="4,4,0,0">
-                            <ContentPresenter x:Name="ContentSite" ContentSource="Header" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource PrimaryAccentBrush}"/>
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource CardBackgroundBrush}"/>
-                                <Setter Property="Foreground" Value="{StaticResource PrimaryAccentBrush}"/>
-                                <Setter Property="FontWeight" Value="Bold"/>
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="False">
-                                <Setter TargetName="Border" Property="BorderBrush" Value="Transparent"/>
-                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}"/>
-                            </Trigger>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Border" Property="Background" Value="{StaticResource CardBackgroundHoverBrush}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="StatCard" TargetType="Border">
-            <Setter Property="Background" Value="{StaticResource CardBackgroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="Margin" Value="4"/>
-            <Setter Property="Padding" Value="10"/>
-        </Style>
-
         <!-- ==================== LOG TEXTBOX STYLES ==================== -->
         <!-- Terminal TextBox Style (reused across windows) -->
         <Style x:Key="TerminalLogTextBox" TargetType="TextBox">
@@ -555,29 +372,9 @@
             <Setter Property="VerticalContentAlignment" Value="Top"/>
         </Style>
 
-        <!-- Terminal TextBox with Glow Effect -->
-        <Style x:Key="TerminalLogTextBoxWithGlow" TargetType="TextBox" BasedOn="{StaticResource TerminalLogTextBox}">
-            <Setter Property="Effect">
-                <Setter.Value>
-                    <DropShadowEffect ShadowDepth="0" Color="#39FF14" BlurRadius="2" Opacity="0.4"/>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <!-- ==================== BUTTON CONTENT COLORS ==================== -->
         <!-- Dark text color for buttons with light backgrounds -->
         <SolidColorBrush x:Key="ButtonTextDarkBrush" Color="#121518"/>
-
-        <!-- ==================== TABCONTROL STYLE ==================== -->
-        <Style TargetType="TabControl">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-        </Style>
-
-        <!-- ==================== GRIDSPLITTER STYLE ==================== -->
-        <Style TargetType="GridSplitter">
-            <Setter Property="Background" Value="Transparent"/>
-        </Style>
 
         <!-- ==================== APPLICATION-SPECIFIC NAMED STYLES ==================== -->
 
@@ -587,47 +384,6 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Foreground" Value="{StaticResource HeaderTextBrush}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-
-        <!-- Section Label (bold labels) -->
-        <Style x:Key="SectionLabelStyle" TargetType="Label">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
-        </Style>
-
-        <!-- Stat Card Label (e.g., "TOTAL FILES", "SUCCESS", "ELAPSED") -->
-        <Style x:Key="StatLabelStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="10"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-        </Style>
-
-        <!-- Stat Card Label - Success variant -->
-        <Style x:Key="StatLabelSuccessStyle" TargetType="TextBlock" BasedOn="{StaticResource StatLabelStyle}">
-            <Setter Property="Foreground" Value="{StaticResource SuccessTextBrush}"/>
-        </Style>
-
-        <!-- Stat Card Label - Failed variant -->
-        <Style x:Key="StatLabelFailedStyle" TargetType="TextBlock" BasedOn="{StaticResource StatLabelStyle}">
-            <Setter Property="Foreground" Value="{StaticResource FailedTextBrush}"/>
-        </Style>
-
-        <!-- Stat Card Value (the numeric value in stat cards) -->
-        <Style x:Key="StatValueStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-        </Style>
-
-        <!-- Stat Card Value - Success variant -->
-        <Style x:Key="StatValueSuccessStyle" TargetType="TextBlock" BasedOn="{StaticResource StatValueStyle}">
-            <Setter Property="Foreground" Value="{StaticResource SuccessTextBrush}"/>
-        </Style>
-
-        <!-- Stat Card Value - Failed variant -->
-        <Style x:Key="StatValueFailedStyle" TargetType="TextBlock" BasedOn="{StaticResource StatValueStyle}">
-            <Setter Property="Foreground" Value="{StaticResource FailedTextBrush}"/>
         </Style>
 
         <!-- About Window Title -->
@@ -643,13 +399,6 @@
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
-        </Style>
-
-        <!-- About Window Section Header -->
-        <Style x:Key="AboutSectionHeaderStyle" TargetType="TextBlock">
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
         </Style>
 
         <!-- About Window Body Text -->

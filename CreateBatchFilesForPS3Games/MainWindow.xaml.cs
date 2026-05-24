@@ -121,7 +121,7 @@ public partial class MainWindow
 
     private void BrowseFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        var discGamesFolder = SelectFolder();
+        var discGamesFolder = SelectFolder("Please select the folder containing your PS3 disc game folders.");
         if (string.IsNullOrEmpty(discGamesFolder)) return;
 
         GameFolderTextBox.Text = discGamesFolder;
@@ -131,7 +131,7 @@ public partial class MainWindow
 
     private void BrowseOutputFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        var outputFolder = SelectFolder();
+        var outputFolder = SelectFolder("Please select the folder where you want to save the batch files.");
         if (string.IsNullOrEmpty(outputFolder)) return;
 
         OutputFolderTextBox.Text = outputFolder;
@@ -190,21 +190,19 @@ public partial class MainWindow
 
                 try
                 {
-                    async Task<CancellationToken> ProcessAllAsync()
+                    async Task ProcessAllAsync()
                     {
                         var totalFilesCreated = 0;
                         var totalFoldersScanned = 0;
 
-                        // Process main game folder (if different from output folder)
                         var rpcs3Root = Path.GetDirectoryName(rpcs3ExePath);
                         if (rpcs3Root == null)
                         {
                             ShowError("Could not determine the RPCS3 root directory.");
                             UpdateStatusBarMessage("Error: Could not determine RPCS3 root.");
-                            return token;
+                            return;
                         }
 
-                        // Process dev_hdd0/game folder inside RPCS3 directory
                         var rpcs3GameFolder = Path.Combine(rpcs3Root, "dev_hdd0", "game");
                         if (Directory.Exists(rpcs3GameFolder))
                         {
@@ -218,7 +216,6 @@ public partial class MainWindow
                             LogMessage($"\n--- RPCS3 game folder not found at {rpcs3GameFolder}, skipping. ---\n");
                         }
 
-                        // Process the user-selected disc games folder (if provided)
                         if (!string.IsNullOrEmpty(gamesFolder) && Directory.Exists(gamesFolder))
                         {
                             LogMessage($"\n--- Scanning disc game folder: {gamesFolder} ---\n");
@@ -227,15 +224,12 @@ public partial class MainWindow
                             totalFilesCreated += discCreated;
                         }
 
-
                         LogMessage("\n--- Process Complete ---");
                         LogMessage($"Scanned {totalFoldersScanned} potential game folders.");
                         LogMessage($"Successfully created {totalFilesCreated} batch files in '{outputFolder}'.");
                         UpdateStatusBarMessage($"Process complete. Created {totalFilesCreated} files.");
 
                         ShowMessageBox($"Batch file creation complete.\n\nCreated {totalFilesCreated} files.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                        return token;
                     }
 
                     _processingTask = ProcessAllAsync();
@@ -375,12 +369,9 @@ public partial class MainWindow
         return (foldersScanned, filesCreated);
     }
 
-    private static string? SelectFolder()
+    private static string? SelectFolder(string title)
     {
-        var dialog = new OpenFolderDialog
-        {
-            Title = "Please select the folder where you want to save the batch files."
-        };
+        var dialog = new OpenFolderDialog { Title = title };
         return dialog.ShowDialog() == true ? dialog.FolderName : null;
     }
 

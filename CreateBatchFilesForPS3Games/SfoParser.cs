@@ -17,6 +17,12 @@ public class SfoParser : ISfoParser
         var dataTableStart = BitConverter.ToUInt32(sfoBytes, 12);
         var tablesEntries = BitConverter.ToUInt32(sfoBytes, 16);
 
+        var maxEntries = (sfoBytes.Length - 20) / 16;
+        if (tablesEntries > maxEntries)
+        {
+            tablesEntries = (uint)maxEntries;
+        }
+
         for (var i = 0; i < tablesEntries; i++)
         {
             var entryOffset = 20 + (i * 16);
