@@ -62,6 +62,12 @@ public class UpdateServiceTests
     [InlineData("V5.0.1", 5, 0, 1)]
     [InlineData("v10.20.30.40", 10, 20, 30, 40)]
     [InlineData("0.0.0.0", 0, 0, 0, 0)]
+    [InlineData("release_1.4.0", 1, 4, 0)]
+    [InlineData("release_1.2.1", 1, 2, 1)]
+    [InlineData("release1.0.0.1", 1, 0, 0, 1)]
+    [InlineData("release1.2", 1, 2)]
+    [InlineData("RELEASE_3.0.0", 3, 0, 0)]
+    [InlineData("Release_2.5.1", 2, 5, 1)]
     public void ParseVersion_ValidTags_ReturnsVersion(string tag, int major, int minor, int build = -1, int revision = -1)
     {
         var result = UpdateService.ParseVersion(tag);

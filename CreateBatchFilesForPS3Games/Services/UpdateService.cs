@@ -55,6 +55,8 @@ public class UpdateService : IUpdateService
         }
     }
 
+    private static readonly string[] Prefixes = ["release_", "release", "v", "V"];
+
     internal static Version? ParseVersion(string? tag)
     {
         if (string.IsNullOrWhiteSpace(tag))
@@ -62,9 +64,13 @@ public class UpdateService : IUpdateService
 
         tag = tag.Trim();
 
-        if (tag.StartsWith('v') || tag.StartsWith('V'))
+        foreach (var prefix in Prefixes)
         {
-            tag = tag[1..];
+            if (tag.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                tag = tag[prefix.Length..];
+                break;
+            }
         }
 
         return Version.TryParse(tag, out var version) ? version : null;
