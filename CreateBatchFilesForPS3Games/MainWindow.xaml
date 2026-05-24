@@ -4,34 +4,48 @@
         Title="Batch File Creator for PS3 Games"
         Height="550" Width="800" MinHeight="500" MinWidth="600"
         Closing="Window_Closing"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBackgroundBrush}">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/> <!-- Menu -->
+            <RowDefinition Height="Auto"/> <!-- Header -->
             <RowDefinition Height="*"/>    <!-- Main Content -->
             <RowDefinition Height="Auto"/> <!-- Status Bar -->
         </Grid.RowDefinitions>
 
-        <Menu Grid.Row="0">
-            <MenuItem Header="_File">
-                <MenuItem Header="E_xit" Click="ExitMenuItem_Click">
-                    <MenuItem.Icon>
-                        <Image Source="pack://application:,,,/images/exit.png" Width="16" Height="16" />
-                    </MenuItem.Icon>
-                </MenuItem>
-            </MenuItem>
-            <MenuItem Header="_Help">
-                <MenuItem Header="_About" Click="AboutMenuItem_Click">
-                    <MenuItem.Icon>
-                        <Image Source="pack://application:,,,/images/about.png" Width="16" Height="16" />
-                    </MenuItem.Icon>
-                </MenuItem>
-            </MenuItem>
-        </Menu>
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{StaticResource HeaderBackgroundBrush}" Padding="15,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Batch File Creator for PS3 Games" Style="{StaticResource HeaderTitleStyle}" ToolTip="Batch File Creator for PS3 Games" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Click="AboutMenuItem_Click" Style="{StaticResource ActionButtonStyle}" Background="{StaticResource AboutButtonBrush}" ToolTip="About">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <Image Source="pack://application:,,,/images/about.png" Width="16" Height="16" Margin="0,0,5,0" />
+                                <TextBlock Text="About" Style="{StaticResource ButtonContentTextStyle}" />
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+                    <Button Click="ExitMenuItem_Click" Style="{StaticResource ActionButtonStyle}" Background="{StaticResource ExitButtonBrush}" ToolTip="Exit">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <Image Source="pack://application:,,,/images/exit.png" Width="16" Height="16" Margin="0,0,5,0" />
+                                <TextBlock Text="Exit" Style="{StaticResource ButtonContentTextStyle}" />
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
 
         <!-- Main Content Area -->
-        <Grid Grid.Row="1">
+        <Grid Grid.Row="1" Margin="15">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -39,47 +53,58 @@
             </Grid.RowDefinitions>
 
             <!-- RPCS3 Path Selection -->
-            <Grid Grid.Row="0" Margin="10,10,10,5">
+            <Grid Grid.Row="0" Margin="0,0,0,10">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="90"/>
+                    <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Label Grid.Column="0" Content="RPCS3 Path:" VerticalAlignment="Center"/>
-                <TextBox x:Name="Rpcs3PathTextBox" Grid.Column="1" Margin="5,0,5,0" Padding="5" IsReadOnly="True"/>
-                <Button x:Name="BrowseRpcs3Button" Grid.Column="2" Content="Browse" Click="BrowseRPCS3Button_Click" Padding="10,5"/>
+                <Label Grid.Column="0" Content="RPCS3 Path:" ToolTip="Path to the RPCS3 emulator executable" />
+                <TextBox x:Name="Rpcs3PathTextBox" Grid.Column="1" Margin="5,0" IsReadOnly="True" ToolTip="Selected RPCS3 executable path" />
+                <Button x:Name="BrowseRpcs3Button" Grid.Column="2" Content="Browse" Click="BrowseRPCS3Button_Click" Style="{StaticResource ActionButtonStyle}" ToolTip="Browse for rpcs3.exe" />
             </Grid>
 
-            <!-- Game Folder Selection -->
-            <Grid Grid.Row="1" Margin="10,5,10,5">
+            <!-- Disc Games Folder Selection -->
+            <Grid Grid.Row="1" Margin="0,0,0,10">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="90"/>
+                    <ColumnDefinition Width="100"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Label Grid.Column="0" Content="Games Folder:" VerticalAlignment="Center"/>
-                <TextBox x:Name="GameFolderTextBox" Grid.Column="1" Margin="5,0,5,0" Padding="5" IsReadOnly="True"/>
-                <Button x:Name="BrowseFolderButton" Grid.Column="2" Content="Browse" Click="BrowseFolderButton_Click" Padding="10,5"/>
+                <Label Grid.Column="0" Content="Disc Games:" ToolTip="Folder containing PS3 disc game subdirectories (e.g., BLUS12345)" />
+                <TextBox x:Name="GameFolderTextBox" Grid.Column="1" Margin="5,0" IsReadOnly="True" ToolTip="Source folder with disc game directories" />
+                <Button x:Name="BrowseFolderButton" Grid.Column="2" Content="Browse" Click="BrowseFolderButton_Click" Style="{StaticResource ActionButtonStyle}" ToolTip="Browse for disc games folder" />
+            </Grid>
+
+            <!-- Output Folder Selection -->
+            <Grid Grid.Row="2" Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Label Grid.Column="0" Content="Output Folder:" ToolTip="Folder where batch files will be saved" />
+                <TextBox x:Name="OutputFolderTextBox" Grid.Column="1" Margin="5,0" IsReadOnly="True" ToolTip="Destination folder for generated batch files" />
+                <Button x:Name="BrowseOutputFolderButton" Grid.Column="2" Content="Browse" Click="BrowseOutputFolderButton_Click" Style="{StaticResource ActionButtonStyle}" ToolTip="Browse for output folder" />
             </Grid>
 
             <!-- Create Batch Files Button -->
-            <Button x:Name="CreateBatchFilesButton" Grid.Row="2" Content="Create Batch Files" Click="CreateBatchFilesButton_Click" 
-                    Margin="10,10,10,15" Padding="15,8" HorizontalAlignment="Center" FontWeight="Bold"/>
+            <Button x:Name="CreateBatchFilesButton" Grid.Row="3" Content="Create Batch Files" Click="CreateBatchFilesButton_ClickAsync"
+                    Style="{StaticResource StartButtonStyle}" Height="36" FontSize="14"
+                    Margin="0,5,0,15" HorizontalAlignment="Stretch" ToolTip="Start creating batch files for all detected PS3 games" />
 
             <!-- Log TextBox -->
             <TextBox x:Name="LogTextBox"
-                     Grid.Row="3"
-                     AcceptsReturn="True"
-                     VerticalScrollBarVisibility="Visible"
-                     IsReadOnly="True"
-                     Margin="10,0,10,10"
-                     FontFamily="Consolas"/>
+                     Grid.Row="4"
+                     Style="{StaticResource TerminalLogTextBox}"
+                     Margin="0,0,0,0"
+                     ToolTip="Application activity log" />
         </Grid>
 
         <!-- Status Bar -->
-        <StatusBar Grid.Row="2">
-            <StatusBarItem>
-                <TextBlock x:Name="StatusBarMessage" Text="Ready" />
+        <StatusBar Grid.Row="2" ToolTip="Shows current application status and progress">
+            <StatusBarItem ToolTip="Status information area">
+                <TextBlock x:Name="StatusBarMessage" Text="Ready" ToolTip="Current status message" />
             </StatusBarItem>
         </StatusBar>
     </Grid>

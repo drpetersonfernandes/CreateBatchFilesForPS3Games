@@ -8,8 +8,8 @@
     <ApplicationIcon>icon\icon.ico</ApplicationIcon>
     <UseWPF>true</UseWPF>
     <SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
-    <AssemblyVersion>1.4</AssemblyVersion>
-    <FileVersion>1.4</FileVersion>
+    <AssemblyVersion>1.5.0</AssemblyVersion>
+    <FileVersion>1.5.0</FileVersion>
     <RootNamespace>CreateBatchFilesForPS3Games</RootNamespace>
     <IsPackable>false</IsPackable>
     <LangVersion>14</LangVersion>
@@ -17,7 +17,14 @@
     <DebugType>embedded</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <EnableWindowsLongPath>true</EnableWindowsLongPath>
+    <Company>PureLogicCode.com</Company>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>CreateBatchFilesForPS3Games.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 
   <ItemGroup>
     <Resource Include="icon\icon.ico" />
@@ -26,6 +33,10 @@
     <Resource Include="images\exit.png" />
     <None Remove="images\logo.png" />
     <Resource Include="images\logo.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
   </ItemGroup>
 
 </Project>

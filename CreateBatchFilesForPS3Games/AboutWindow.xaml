@@ -2,29 +2,60 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="About Batch File Creator for PS3 Games"
-        Width="450" Height="400"
+        Width="450" Height="600"
         ResizeMode="NoResize"
-        WindowStartupLocation="CenterScreen">
-    <Grid>
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBackgroundBrush}">
+    <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="10" HorizontalAlignment="Center">
-            <Image Source="pack://application:,,,/images/logo.png" Width="150" Height="150" />
-        </StackPanel>
+        <!-- Logo Section -->
+        <Border Grid.Row="0" Style="{StaticResource CardBorder}">
+            <StackPanel HorizontalAlignment="Center">
+                <Image Source="pack://application:,,,/images/logo.png" Width="130" Height="130" ToolTip="Batch File Creator for PS3 Games" />
+            </StackPanel>
+        </Border>
 
-        <StackPanel Grid.Row="1" Margin="20,10,20,10">
-            <TextBlock FontWeight="Bold" FontSize="16" Text="Batch File Creator for PS3 Games" TextAlignment="Center" TextWrapping="Wrap"/>
-            <TextBlock x:Name="AppVersionTextBlock" Margin="0,5,0,0" Text="Version: 1.2.1" TextAlignment="Center" />
-            <TextBlock x:Name="DescriptionTextBlock" TextWrapping="Wrap" Margin="0,15,0,0" Text="A simple utility to create batch files for launching your PS3 games with the RPCS3 emulator." />
-            <TextBlock Margin="0,15,0,0">
-                <Hyperlink NavigateUri="https://www.purelogiccode.com" RequestNavigate="Hyperlink_RequestNavigate">https://www.purelogiccode.com</Hyperlink>
-            </TextBlock>
-        </StackPanel>
+        <!-- Title & Version Section -->
+        <Border Grid.Row="1" Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock Style="{StaticResource AboutTitleStyle}" Text="Batch File Creator for PS3 Games" TextWrapping="Wrap" ToolTip="Application name" />
+                <TextBlock x:Name="AppVersionTextBlock" Margin="0,8,0,0" Text="" Style="{StaticResource AboutSubtitleStyle}" Foreground="{StaticResource PrimaryAccentBrush}" ToolTip="Current application version" />
+            </StackPanel>
+        </Border>
 
-        <Button Grid.Row="2" Content="Close" Width="100" Margin="10" HorizontalAlignment="Center" Click="CloseButton_Click" IsDefault="True"/>
+        <!-- Description Section -->
+        <Border Grid.Row="2" Style="{StaticResource CardBorder}" Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock x:Name="DescriptionTextBlock" Style="{StaticResource AboutBodyTextStyle}" Text="A simple utility to create batch files for launching your PS3 games with the RPCS3 emulator." LineHeight="20" ToolTip="Brief overview of the application" />
+                <TextBlock Margin="0,15,0,0" ToolTip="Official website link">
+                    <Hyperlink NavigateUri="https://www.purelogiccode.com" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{StaticResource LinkTextBrush}" TextDecorations="Underline" ToolTip="Open website in your default browser">https://www.purelogiccode.com</Hyperlink>
+                </TextBlock>
+                <TextBlock Margin="0,5,0,0" ToolTip="Source code repository">
+                    <Hyperlink NavigateUri="https://github.com/drpetersonfernandes/CreateBatchFilesForPS3Games" RequestNavigate="Hyperlink_RequestNavigate" Foreground="{StaticResource LinkTextBrush}" TextDecorations="Underline" ToolTip="Open repository in your default browser">https://github.com/drpetersonfernandes/CreateBatchFilesForPS3Games</Hyperlink>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+
+        <!-- Update Section -->
+        <Border Grid.Row="3" Style="{StaticResource CardBorder}">
+            <StackPanel>
+                <TextBlock x:Name="UpdateStatusTextBlock" Style="{StaticResource AboutBodyTextStyle}" Text="" TextWrapping="Wrap" ToolTip="Update check result" />
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                    <Button x:Name="CheckUpdatesButton" Content="Check for Updates" Click="CheckUpdatesButton_Click" Style="{StaticResource ActionButtonStyle}" ToolTip="Check if a new version is available on GitHub" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Close Button -->
+        <StackPanel Grid.Row="4" HorizontalAlignment="Center">
+            <Button Click="CloseButton_Click" Content="Close" Style="{StaticResource ActionButtonStyle}" ToolTip="Close the About window" />
+        </StackPanel>
     </Grid>
 </Window>

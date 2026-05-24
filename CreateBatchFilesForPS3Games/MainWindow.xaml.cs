@@ -7,39 +7,102 @@ using Microsoft.Win32;
 
 namespace CreateBatchFilesForPS3Games;
 
+internal enum GameType
+{
+    DiscGame,
+    HddGame
+}
+
 public partial class MainWindow
 {
-    public MainWindow()
+    private readonly ISfoParser _sfoParser;
+    private readonly IFileNameSanitizer _fileNameSanitizer;
+    private readonly IFileSystemHelper _fileSystemHelper;
+    private CancellationTokenSource? _cts;
+    private Task? _processingTask;
+    private bool _isClosing;
+
+    public MainWindow(ISfoParser sfoParser, IFileNameSanitizer fileNameSanitizer, IFileSystemHelper fileSystemHelper)
     {
         InitializeComponent();
+        _sfoParser = sfoParser;
+        _fileNameSanitizer = fileNameSanitizer;
+        _fileSystemHelper = fileSystemHelper;
         LogMessage("Welcome to the Batch File Creator for PS3 Games.");
         LogMessage("");
         LogMessage("This program creates batch files to launch your PS3 games.");
         LogMessage("Please follow these steps:");
         LogMessage("1. Select the RPCS3 emulator executable file (rpcs3.exe)");
-        LogMessage("2. Select the root folder where you want to save the batch files");
-        LogMessage("3. Click 'Create Batch Files' to generate the batch files");
+        LogMessage("2. (Optional) Select the folder containing your PS3 disc game folders");
+        LogMessage("3. Select the folder where you want to save the batch files");
+        LogMessage("4. Click 'Create Batch Files' to generate the batch files");
         LogMessage("");
         UpdateStatusBarMessage("Ready");
     }
 
+    internal void ShowUpdateAvailable(string? latestVersion)
+    {
+        if (string.IsNullOrWhiteSpace(latestVersion)) return;
+
+        UpdateStatusBarMessage($"A new version ({latestVersion}) is available! Click 'About' and then 'Check for Updates'.");
+    }
+
     private void UpdateStatusBarMessage(string message)
     {
-        Application.Current.Dispatcher.InvokeAsync(() =>
+        var dispatcher = Application.Current.Dispatcher;
+        if (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+            return;
+
+        dispatcher.InvokeAsync(() =>
         {
             StatusBarMessage.Text = message;
         });
     }
 
-    private void Window_Closing(object sender, CancelEventArgs e)
+    private async void Window_Closing(object sender, CancelEventArgs e)
     {
-        // The application will shut down automatically when the main window closes.
-        // No extra code is needed here.
+        try
+        {
+            if (_isClosing)
+                return;
+
+            if (_processingTask is { IsCompleted: false })
+            {
+                e.Cancel = true;
+
+                _cts?.Cancel();
+                CreateBatchFilesButton.IsEnabled = false;
+                UpdateStatusBarMessage("Waiting for running tasks to complete...");
+
+                try
+                {
+                    await _processingTask;
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+
+                _isClosing = true;
+                Close();
+            }
+        }
+        catch (Exception ex)
+        {
+            await ReportBugAsync("Error in method Window_Closing", ex);
+        }
     }
 
     private void LogMessage(string message)
     {
-        Application.Current.Dispatcher.Invoke(() =>
+        var dispatcher = Application.Current.Dispatcher;
+        if (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+            return;
+
+        dispatcher.InvokeAsync(() =>
         {
             LogTextBox.AppendText(message + Environment.NewLine);
             LogTextBox.ScrollToEnd();
@@ -58,100 +121,147 @@ public partial class MainWindow
 
     private void BrowseFolderButton_Click(object sender, RoutedEventArgs e)
     {
-        var rootFolder = SelectFolder();
-        if (string.IsNullOrEmpty(rootFolder)) return;
+        var discGamesFolder = SelectFolder();
+        if (string.IsNullOrEmpty(discGamesFolder)) return;
 
-        GameFolderTextBox.Text = rootFolder;
-        LogMessage($"Batch file output folder selected: {rootFolder}");
+        GameFolderTextBox.Text = discGamesFolder;
+        LogMessage($"Disc games folder selected: {discGamesFolder}");
+        UpdateStatusBarMessage("Disc games folder selected.");
+    }
+
+    private void BrowseOutputFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        var outputFolder = SelectFolder();
+        if (string.IsNullOrEmpty(outputFolder)) return;
+
+        OutputFolderTextBox.Text = outputFolder;
+        LogMessage($"Batch file output folder selected: {outputFolder}");
         UpdateStatusBarMessage("Output folder selected.");
     }
 
-    private async void CreateBatchFilesButton_Click(object sender, RoutedEventArgs e)
+    private async void CreateBatchFilesButton_ClickAsync(object sender, RoutedEventArgs e)
     {
         try
         {
-            var rpcs3ExePath = Rpcs3PathTextBox.Text;
-            var outputFolder = GameFolderTextBox.Text;
-
-            if (string.IsNullOrEmpty(rpcs3ExePath) || !File.Exists(rpcs3ExePath))
-            {
-                ShowError("Please select a valid RPCS3 executable file (rpcs3.exe).");
-                UpdateStatusBarMessage("Error: Invalid RPCS3 path.");
-                return;
-            }
-
-            if (string.IsNullOrEmpty(outputFolder) || !Directory.Exists(outputFolder))
-            {
-                ShowError("Please select a valid folder to save the batch files.");
-                UpdateStatusBarMessage("Error: Invalid output folder path.");
-                return;
-            }
-
-            if (!VerifyWriteAccess(outputFolder))
-            {
-                ShowError("Cannot write to the selected folder. Please try these solutions:\n\n" +
-                          "1. Run the application as Administrator\n" +
-                          "2. Choose a different output folder (e.g., your Desktop or Documents)\n" +
-                          "3. Check the folder security permissions in Windows Explorer");
-                UpdateStatusBarMessage("Error: Insufficient folder permissions.");
-                return;
-            }
-
-            CreateBatchFilesButton.IsEnabled = false;
-            UpdateStatusBarMessage("Processing... please wait.");
+            _cts?.Cancel();
+            _cts = new CancellationTokenSource();
+            var token = _cts.Token;
 
             try
             {
-                var totalFilesCreated = 0;
-                var totalFoldersScanned = 0;
+                var rpcs3ExePath = Rpcs3PathTextBox.Text;
+                var gamesFolder = GameFolderTextBox.Text;
+                var outputFolder = OutputFolderTextBox.Text;
 
-                // Process main game folder (if different from output folder)
-                var rpcs3Root = Path.GetDirectoryName(rpcs3ExePath);
-                if (rpcs3Root == null)
+                if (string.IsNullOrEmpty(rpcs3ExePath) || !File.Exists(rpcs3ExePath))
                 {
-                    ShowError("Could not determine the RPCS3 root directory.");
-                    UpdateStatusBarMessage("Error: Could not determine RPCS3 root.");
+                    ShowError("Please select a valid RPCS3 executable file (rpcs3.exe).");
+                    UpdateStatusBarMessage("Error: Invalid RPCS3 path.");
                     return;
                 }
 
-                // Process dev_hdd0/game folder inside RPCS3 directory
-                var rpcs3GameFolder = Path.Combine(rpcs3Root, "dev_hdd0", "game");
-                if (Directory.Exists(rpcs3GameFolder))
+                if (string.IsNullOrEmpty(outputFolder) || !Directory.Exists(outputFolder))
                 {
-                    LogMessage($"\n--- Scanning RPCS3 game folder: {rpcs3GameFolder} ---\n");
-                    var (scanned, created) = await ProcessGameFoldersAsync(rpcs3GameFolder, rpcs3ExePath, outputFolder, GameType.HddGame);
-                    totalFoldersScanned += scanned;
-                    totalFilesCreated += created;
-                }
-                else
-                {
-                    LogMessage($"\n--- RPCS3 game folder not found at {rpcs3GameFolder}, skipping. ---\n");
+                    ShowError("Please select a valid folder to save the batch files.");
+                    UpdateStatusBarMessage("Error: Invalid output folder path.");
+                    return;
                 }
 
-                // Process the user-selected "Games Folder" as a source of disc games
-                LogMessage($"\n--- Scanning disc game folder: {outputFolder} ---\n");
-                var (discScanned, discCreated) = await ProcessGameFoldersAsync(outputFolder, rpcs3ExePath, outputFolder, GameType.DiscGame);
-                totalFoldersScanned += discScanned;
-                totalFilesCreated += discCreated;
+                if (!_fileSystemHelper.VerifyWriteAccess(outputFolder))
+                {
+                    LogMessage($"Write permission check failed for '{outputFolder}'.");
+                    ShowError("Cannot write to the selected folder. Please try these solutions:\n\n" +
+                              "1. Run the application as Administrator\n" +
+                              "2. Choose a different output folder (e.g., your Desktop or Documents)\n" +
+                              "3. Check the folder security permissions in Windows Explorer");
+                    UpdateStatusBarMessage("Error: Insufficient folder permissions.");
+                    return;
+                }
+
+                if (rpcs3ExePath.Contains('"') || outputFolder.Contains('"') || (gamesFolder.Contains('"')))
+                {
+                    ShowError("File paths containing double quotes are not supported. Please select valid paths.");
+                    UpdateStatusBarMessage("Error: Paths must not contain double quotes.");
+                    return;
+                }
+
+                CreateBatchFilesButton.IsEnabled = false;
+                UpdateStatusBarMessage("Processing... please wait.");
+
+                try
+                {
+                    async Task<CancellationToken> ProcessAllAsync()
+                    {
+                        var totalFilesCreated = 0;
+                        var totalFoldersScanned = 0;
+
+                        // Process main game folder (if different from output folder)
+                        var rpcs3Root = Path.GetDirectoryName(rpcs3ExePath);
+                        if (rpcs3Root == null)
+                        {
+                            ShowError("Could not determine the RPCS3 root directory.");
+                            UpdateStatusBarMessage("Error: Could not determine RPCS3 root.");
+                            return token;
+                        }
+
+                        // Process dev_hdd0/game folder inside RPCS3 directory
+                        var rpcs3GameFolder = Path.Combine(rpcs3Root, "dev_hdd0", "game");
+                        if (Directory.Exists(rpcs3GameFolder))
+                        {
+                            LogMessage($"\n--- Scanning RPCS3 game folder: {rpcs3GameFolder} ---\n");
+                            var (scanned, created) = await ProcessGameFoldersAsync(rpcs3GameFolder, rpcs3ExePath, outputFolder, GameType.HddGame, token);
+                            totalFoldersScanned += scanned;
+                            totalFilesCreated += created;
+                        }
+                        else
+                        {
+                            LogMessage($"\n--- RPCS3 game folder not found at {rpcs3GameFolder}, skipping. ---\n");
+                        }
+
+                        // Process the user-selected disc games folder (if provided)
+                        if (!string.IsNullOrEmpty(gamesFolder) && Directory.Exists(gamesFolder))
+                        {
+                            LogMessage($"\n--- Scanning disc game folder: {gamesFolder} ---\n");
+                            var (discScanned, discCreated) = await ProcessGameFoldersAsync(gamesFolder, rpcs3ExePath, outputFolder, GameType.DiscGame, token);
+                            totalFoldersScanned += discScanned;
+                            totalFilesCreated += discCreated;
+                        }
 
 
-                LogMessage("\n--- Process Complete ---");
-                LogMessage($"Scanned {totalFoldersScanned} potential game folders.");
-                LogMessage($"Successfully created {totalFilesCreated} batch files in '{outputFolder}'.");
-                UpdateStatusBarMessage($"Process complete. Created {totalFilesCreated} files.");
+                        LogMessage("\n--- Process Complete ---");
+                        LogMessage($"Scanned {totalFoldersScanned} potential game folders.");
+                        LogMessage($"Successfully created {totalFilesCreated} batch files in '{outputFolder}'.");
+                        UpdateStatusBarMessage($"Process complete. Created {totalFilesCreated} files.");
 
-                ShowMessageBox($"Batch file creation complete.\n\nCreated {totalFilesCreated} files.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                        ShowMessageBox($"Batch file creation complete.\n\nCreated {totalFilesCreated} files.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                        return token;
+                    }
+
+                    _processingTask = ProcessAllAsync();
+                    await _processingTask;
+                }
+                catch (Exception ex)
+                {
+                    LogMessage($"An unexpected error occurred: {ex.Message}");
+                    _ = ReportBugAsync("An unexpected error occurred during batch file creation.", ex);
+                    ShowError($"An unexpected error occurred: {ex.Message}");
+                    UpdateStatusBarMessage("An error occurred.");
+                }
+                finally
+                {
+                    CreateBatchFilesButton.IsEnabled = true;
+                    _cts?.Dispose();
+                    _cts = null;
+                    _processingTask = null;
+                }
             }
             catch (Exception ex)
             {
-                LogMessage($"An unexpected error occurred: {ex.Message}");
-                _ = ReportBugAsync("An unexpected error occurred during batch file creation.", ex);
-                ShowError($"An unexpected error occurred: {ex.Message}");
-                UpdateStatusBarMessage("An error occurred.");
-            }
-            finally
-            {
-                CreateBatchFilesButton.IsEnabled = true;
+                _ = ReportBugAsync("Error creating batch files", ex);
+                _cts?.Dispose();
+                _cts = null;
+                _processingTask = null;
             }
         }
         catch (Exception ex)
@@ -160,19 +270,15 @@ public partial class MainWindow
         }
     }
 
-    private enum GameType
-    {
-        DiscGame,
-        HddGame
-    }
-
-    private async Task<(int foldersScanned, int filesCreated)> ProcessGameFoldersAsync(string sourceFolder, string rpcs3ExePath, string outputFolder, GameType type)
+    private async Task<(int foldersScanned, int filesCreated)> ProcessGameFoldersAsync(string sourceFolder, string rpcs3ExePath, string outputFolder, GameType type, CancellationToken token)
     {
         var filesCreated = 0;
-        var subdirectories = await Task.Run(() => Directory.GetDirectories(sourceFolder));
+        var foldersScanned = 0;
+        var subdirectories = await Task.Run(() => Directory.GetDirectories(sourceFolder), token);
 
         foreach (var subdirectory in subdirectories)
         {
+            token.ThrowIfCancellationRequested();
             string ebootPath;
             string sfoPath;
 
@@ -192,7 +298,9 @@ public partial class MainWindow
                 continue; // Not a valid game folder for this type
             }
 
-            var sfoData = await Task.Run(() => ReadSfo(sfoPath));
+            foldersScanned++;
+
+            var sfoData = await Task.Run(() => ReadSfo(sfoPath), token);
             if (sfoData == null)
             {
                 LogMessage($"Could not read PARAM.SFO for {Path.GetFileName(subdirectory)}, skipping.");
@@ -204,9 +312,10 @@ public partial class MainWindow
 
             var batchFileName = !string.IsNullOrEmpty(title) ? title :
                 !string.IsNullOrEmpty(titleId) ? titleId :
-                Path.GetFileName(subdirectory);
+                !string.IsNullOrEmpty(Path.GetFileName(subdirectory)) ? Path.GetFileName(subdirectory) :
+                "UntitledGame";
 
-            batchFileName = SanitizeFileName(batchFileName);
+            batchFileName = _fileNameSanitizer.SanitizeFileName(batchFileName);
             var batchFilePath = Path.Combine(outputFolder, batchFileName + ".bat");
 
             try
@@ -238,8 +347,8 @@ public partial class MainWindow
                 {
                     var rpcs3Directory = Path.GetDirectoryName(rpcs3ExePath);
                     await sw.WriteLineAsync("@echo off");
-                    await sw.WriteLineAsync($"cd /d \"{rpcs3Directory}\"");
-                    await sw.WriteLineAsync($"start \"\" \"{rpcs3ExePath}\" --no-gui \"{ebootPath}\"");
+                    await sw.WriteLineAsync($"cd /d \"{EscapeBatchPath(rpcs3Directory!)}\"");
+                    await sw.WriteLineAsync($"start \"\" \"{EscapeBatchPath(rpcs3ExePath)}\" --no-gui \"{EscapeBatchPath(ebootPath)}\"");
                 }
 
                 LogMessage($"✓ Batch file created: {batchFilePath}");
@@ -263,7 +372,7 @@ public partial class MainWindow
             }
         }
 
-        return (subdirectories.Length, filesCreated);
+        return (foldersScanned, filesCreated);
     }
 
     private static string? SelectFolder()
@@ -286,100 +395,9 @@ public partial class MainWindow
         return dialog.ShowDialog() == true ? dialog.FileName : null;
     }
 
-    private string SanitizeFileName(string filename)
+    internal static string EscapeBatchPath(string path)
     {
-        // Remove unwanted keywords like (Trial), Trial, Demo, case-insensitively.
-        filename = filename.Replace("(Trial)", "", StringComparison.OrdinalIgnoreCase);
-        filename = filename.Replace("Trial", "", StringComparison.OrdinalIgnoreCase);
-        filename = filename.Replace("Demo", "", StringComparison.OrdinalIgnoreCase);
-
-        // Apply Title Case formatting. Convert to lower first to handle all-caps correctly.
-        var textInfo = CultureInfo.InvariantCulture.TextInfo;
-        filename = textInfo.ToTitleCase(filename.ToLowerInvariant());
-
-        // Post-process to fix Roman numerals that were incorrectly cased by ToTitleCase.
-        var words = filename.Split(' ');
-        for (var i = 0; i < words.Length; i++)
-        {
-            if (IsRomanNumeral(words[i]))
-            {
-                words[i] = words[i].ToUpperInvariant();
-            }
-        }
-
-        filename = string.Join(" ", words);
-
-        // Perform original sanitization (remove special chars, etc.)
-        filename = filename.Replace("™", "").Replace("®", "").Replace(":", " -");
-
-        // Clean up whitespace.
-        filename = filename.Trim();
-
-        // Replace multiple spaces with a single space.
-        while (filename.Contains("  ", StringComparison.Ordinal))
-        {
-            filename = filename.Replace("  ", " ", StringComparison.Ordinal);
-        }
-
-        // Remove trailing spaces and dots (invalid in Windows)
-        filename = filename.TrimEnd(' ', '.');
-
-        // Handle Windows reserved device names
-        var reservedNames = new[]
-        {
-            "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5",
-            "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4",
-            "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
-        };
-        if (reservedNames.Contains(filename.ToUpperInvariant()))
-        {
-            filename = $"_{filename}_";
-        }
-
-        // Ensure the filename is not empty after sanitization
-        if (string.IsNullOrWhiteSpace(filename))
-        {
-            filename = "UntitledGame";
-        }
-
-        // Remove any invalid file name characters.
-        var invalidChars = Path.GetInvalidFileNameChars();
-        return string.Concat(filename.Split(invalidChars));
-    }
-
-    private static bool IsRomanNumeral(string word)
-    {
-        if (string.IsNullOrWhiteSpace(word))
-        {
-            return false;
-        }
-
-        // ToTitleCase correctly handles single-letter numerals like I, V, X.
-        // We only need to correct multi-letter ones that it mishandles (e.g., "iii" -> "Iii").
-        var upper = word.ToUpperInvariant();
-        switch (upper)
-        {
-            case "II":
-            case "III":
-            case "IV":
-            case "VI":
-            case "VII":
-            case "VIII":
-            case "IX":
-            case "XI":
-            case "XII":
-            case "XIII":
-            case "XIV":
-            case "XV":
-            case "XVI":
-            case "XVII":
-            case "XVIII":
-            case "XIX":
-            case "XX":
-                return true;
-            default:
-                return false;
-        }
+        return path.Replace("\"", "");
     }
 
     private Dictionary<string, string>? ReadSfo(string sfoFilePath)
@@ -388,44 +406,12 @@ public partial class MainWindow
 
         try
         {
-            var result = new Dictionary<string, string>();
             var sfoBytes = File.ReadAllBytes(sfoFilePath);
+            var result = _sfoParser.ParseSfo(sfoBytes);
 
-            // Basic validation
-            if (sfoBytes.Length < 20 || BitConverter.ToUInt32(sfoBytes, 0) != 0x46535000) // PSF magic
+            if (result == null)
             {
                 LogMessage($"Invalid SFO file header: {sfoFilePath}");
-                return null;
-            }
-
-            var keyTableStart = BitConverter.ToUInt32(sfoBytes, 8);
-            var dataTableStart = BitConverter.ToUInt32(sfoBytes, 12);
-            var tablesEntries = BitConverter.ToUInt32(sfoBytes, 16);
-
-            for (var i = 0; i < tablesEntries; i++)
-            {
-                var entryOffset = 20 + (i * 16);
-                var keyOffset = BitConverter.ToUInt16(sfoBytes, entryOffset);
-                var dataFormat = BitConverter.ToUInt16(sfoBytes, entryOffset + 2);
-                var dataLength = BitConverter.ToUInt32(sfoBytes, entryOffset + 4);
-                var dataOffset = BitConverter.ToUInt32(sfoBytes, entryOffset + 12);
-
-                var key = ReadNullTerminatedString(sfoBytes, (int)(keyTableStart + keyOffset));
-                var value = "";
-
-                if ((dataFormat & 0xFF) == 0x04) // Is string type
-                {
-                    value = ReadNullTerminatedString(sfoBytes, (int)(dataTableStart + dataOffset), (int)dataLength);
-                }
-                else if (dataFormat == 0x0404) // Is integer type
-                {
-                    value = BitConverter.ToUInt32(sfoBytes, (int)(dataTableStart + dataOffset)).ToString(CultureInfo.InvariantCulture);
-                }
-
-                if (!string.IsNullOrEmpty(key))
-                {
-                    result.TryAdd(key, value);
-                }
             }
 
             return result;
@@ -438,25 +424,13 @@ public partial class MainWindow
         }
     }
 
-    private static string ReadNullTerminatedString(byte[] buffer, int offset, int maxLength = -1)
-    {
-        var end = Array.IndexOf(buffer, (byte)0, offset);
-        if (end == -1)
-        {
-            end = buffer.Length;
-        }
-
-        if (maxLength != -1 && end > offset + maxLength)
-        {
-            end = offset + maxLength;
-        }
-
-        return Encoding.UTF8.GetString(buffer, offset, end - offset);
-    }
-
     private void ShowMessageBox(string message, string title, MessageBoxButton buttons, MessageBoxImage icon)
     {
-        Dispatcher.Invoke(() => MessageBox.Show(this, message, title, buttons, icon));
+        var dispatcher = Dispatcher;
+        if (dispatcher.HasShutdownStarted || dispatcher.HasShutdownFinished)
+            return;
+
+        dispatcher.Invoke(() => MessageBox.Show(this, message, title, buttons, icon));
     }
 
     private void ShowError(string message)
@@ -475,44 +449,43 @@ public partial class MainWindow
 
         try
         {
-            var fullReport = new StringBuilder();
-            var assemblyName = GetType().Assembly.GetName();
+            var version = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version?.ToString();
 
-            fullReport.AppendLine("=== Bug Report ===");
-            fullReport.AppendLine(CultureInfo.InvariantCulture, $"Application: {assemblyName.Name}");
-            fullReport.AppendLine(CultureInfo.InvariantCulture, $"Version: {assemblyName.Version}");
-            fullReport.AppendLine(CultureInfo.InvariantCulture, $"OS: {Environment.OSVersion}");
-            fullReport.AppendLine(CultureInfo.InvariantCulture, $".NET Version: {Environment.Version}");
-            fullReport.AppendLine(CultureInfo.InvariantCulture, $"Date/Time: {DateTime.Now}");
-            fullReport.AppendLine().AppendLine("=== Error Message ===").AppendLine(message).AppendLine();
+            var fullMessage = new StringBuilder();
+            fullMessage.AppendLine(message);
 
-            if (exception != null)
+            string? logContent = null;
+            if (!Dispatcher.HasShutdownStarted && !Dispatcher.HasShutdownFinished)
             {
-                fullReport.AppendLine("=== Exception Details ===");
-                var currentEx = exception;
-                var level = 0;
-                while (currentEx != null)
+                try
                 {
-                    var indent = new string(' ', level * 2);
-                    fullReport.AppendLine(CultureInfo.InvariantCulture, $"{indent}Type: {currentEx.GetType().FullName}");
-                    fullReport.AppendLine(CultureInfo.InvariantCulture, $"{indent}Message: {currentEx.Message}");
-                    fullReport.AppendLine(CultureInfo.InvariantCulture, $"{indent}StackTrace: {currentEx.StackTrace}");
-                    currentEx = currentEx.InnerException;
-                    level++;
-                    if (currentEx != null) fullReport.AppendLine(CultureInfo.InvariantCulture, $"{indent}Inner Exception:");
+                    logContent = await Dispatcher.InvokeAsync(() => LogTextBox.Text);
+                }
+                catch
+                {
+                    // Window may have been closed/disposed
                 }
             }
 
-            var logContent = await Dispatcher.InvokeAsync(() => LogTextBox.Text);
             if (!string.IsNullOrEmpty(logContent))
             {
-                fullReport.AppendLine().AppendLine("=== Application Log ===").Append(logContent);
+                fullMessage.AppendLine().AppendLine("=== Application Log ===").Append(logContent);
             }
 
-            var (rpcs3Path, gameFolderPath) = await Dispatcher.InvokeAsync(() => (Rpcs3PathTextBox.Text, GameFolderTextBox.Text));
-            fullReport.AppendLine().AppendLine("=== Configuration ===").AppendLine(CultureInfo.InvariantCulture, $"RPCS3 Path: {rpcs3Path}").AppendLine(CultureInfo.InvariantCulture, $"Games Folder: {gameFolderPath}");
+            var rpcs3Path = "";
+            var gameFolderPath = "";
+            var outputFolderPath = "";
+            if (!Dispatcher.HasShutdownStarted && !Dispatcher.HasShutdownFinished)
+            {
+                (rpcs3Path, gameFolderPath, outputFolderPath) = await Dispatcher.InvokeAsync(() => (Rpcs3PathTextBox.Text, GameFolderTextBox.Text, OutputFolderTextBox.Text));
+            }
 
-            await App.BugReportService.SendBugReportAsync(fullReport.ToString());
+            fullMessage.AppendLine().AppendLine("=== Configuration ===")
+                .AppendLine(CultureInfo.InvariantCulture, $"RPCS3 Path: {rpcs3Path}")
+                .AppendLine(CultureInfo.InvariantCulture, $"Disc Games Folder: {gameFolderPath}")
+                .AppendLine(CultureInfo.InvariantCulture, $"Output Folder: {outputFolderPath}");
+
+            await App.BugReportService.SendBugReportAsync(fullMessage.ToString(), version, exception);
         }
         catch
         {
@@ -536,23 +509,6 @@ public partial class MainWindow
         {
             LogMessage($"Error opening About window: {ex.Message}");
             _ = ReportBugAsync("Error opening About window", ex);
-        }
-    }
-
-    private bool VerifyWriteAccess(string folderPath)
-    {
-        try
-        {
-            // Test write permissions by creating and deleting a temporary file
-            var testFile = Path.Combine(folderPath, $".temp_test_{Guid.NewGuid().ToString("N")[..8]}.tmp");
-            File.WriteAllText(testFile, string.Empty);
-            File.Delete(testFile);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            LogMessage($"Write permission check failed for '{folderPath}': {ex.Message}");
-            return false;
         }
     }
 }

@@ -1,66 +1,156 @@
-using System.Globalization;
-using System.Text;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Reflection;
+using System.Windows;
 using System.Windows.Threading;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CreateBatchFilesForPS3Games;
 
-/// <inheritdoc cref="System.Windows.Application" />
-/// <summary>
-/// Interaction logic for App.xaml
-/// </summary>
 public partial class App
 {
-    // Bug Report API configuration (centralized here)
     private const string BugReportApiUrl = "https://www.purelogiccode.com/bugreport/api/send-bug-report";
     private const string BugReportApiKey = "hjh7yu6t56tyr540o9u8767676r5674534453235264c75b6t7ggghgg76trf564e";
     private const string ApplicationName = "CreateBatchFilesForPS3Games";
+    private const string StatsApiUrl = "https://www.purelogiccode.com/api/stats";
+    private const string StatsApiKey = "hjh7yu6t56tyr540o9u8767676r5674534453235264c75b6t7ggghgg76trf564e";
 
-    /// <summary>
-    /// Provides a single, shared instance of the BugReportService for the entire application.
-    /// </summary>
-    public static BugReportService? BugReportService { get; private set; }
+    private static readonly ServiceProvider ServiceProvider;
+
+    public static IBugReportService? BugReportService =>
+        ServiceProvider.GetService<IBugReportService>();
+
+    public static IUpdateService? UpdateService =>
+        ServiceProvider.GetService<IUpdateService>();
+
+    public static IStatsService? StatsService =>
+        ServiceProvider.GetService<IStatsService>();
+
+    public static bool NewVersionAvailable { get; private set; }
+    public static string? LatestVersion { get; private set; }
+    public static string? ReleaseUrl { get; private set; }
+
+    private static string ApplicationVersion =>
+        Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "N/A";
+
+    static App()
+    {
+        var services = new ServiceCollection();
+
+        services.AddSingleton<IBugReportService>(
+            new BugReportService(BugReportApiUrl, BugReportApiKey, ApplicationName));
+
+        services.AddSingleton<IUpdateService>(static _ =>
+        {
+            var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.UserAgent.Add(
+                new ProductInfoHeaderValue(ApplicationName, ApplicationVersion));
+            return new UpdateService(httpClient, "drpetersonfernandes", "PS3BatchLauncherCreator");
+        });
+
+        services.AddSingleton<IStatsService>(
+            new StatsService(StatsApiUrl, StatsApiKey, ApplicationName, ApplicationVersion));
+
+        services.AddSingleton<ISfoParser, SfoParser>();
+        services.AddSingleton<IFileNameSanitizer, FileNameSanitizer>();
+        services.AddSingleton<IFileSystemHelper, FileSystemHelper>();
+        services.AddTransient<MainWindow>();
+
+        ServiceProvider = services.BuildServiceProvider();
+    }
 
     public App()
     {
-        // Initialize the single bug report service instance for the application.
-        BugReportService = new BugReportService(BugReportApiUrl, BugReportApiKey, ApplicationName);
-
-        // Set up global exception handling
         AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
         DispatcherUnhandledException += App_DispatcherUnhandledException;
         TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
     }
 
-    private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    protected override void OnStartup(StartupEventArgs e)
     {
-        if (e.ExceptionObject is Exception exception)
-        {
-            ReportException(exception, "AppDomain.UnhandledException");
-        }
+        base.OnStartup(e);
+
+        var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+        mainWindow.Show();
+
+        _ = CheckForUpdatesOnStartupAsync();
+        _ = SendStartupStatsAsync();
     }
 
-    private void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
-    {
-        ReportException(e.Exception, "Application.DispatcherUnhandledException");
-        e.Handled = true;
-    }
-
-    private void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
-    {
-        ReportException(e.Exception, "TaskScheduler.UnobservedTaskException");
-        e.SetObserved();
-    }
-
-    private async void ReportException(Exception exception, string source)
+    private static async Task CheckForUpdatesOnStartupAsync()
     {
         try
         {
-            var message = BuildExceptionReport(exception, source);
+            var currentVersion = Assembly.GetEntryAssembly()?.GetName().Version;
+            var updateService = UpdateService;
+            if (currentVersion == null || updateService == null) return;
 
-            // Silently report the exception to our API using the shared service instance.
-            if (BugReportService != null)
+            var (updateAvailable, latestVersion, releaseUrl) = await updateService.CheckForUpdateAsync(currentVersion);
+
+            if (updateAvailable)
             {
-                await BugReportService.SendBugReportAsync(message);
+                NewVersionAvailable = true;
+                LatestVersion = latestVersion;
+                ReleaseUrl = releaseUrl;
+
+                await Current.Dispatcher.InvokeAsync(() =>
+                {
+                    if (Current.MainWindow is MainWindow mainWindow)
+                        mainWindow.ShowUpdateAvailable(latestVersion);
+                });
+            }
+        }
+        catch
+        {
+            // Silently ignore startup check failures
+        }
+    }
+
+    private static async Task SendStartupStatsAsync()
+    {
+        try
+        {
+            var statsService = StatsService;
+            if (statsService != null)
+                await statsService.SendStatsAsync();
+        }
+        catch
+        {
+            // Silently ignore stats failures
+        }
+    }
+
+    private static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        if (e.ExceptionObject is Exception exception)
+        {
+            ReportExceptionAsync(exception, "AppDomain.UnhandledException");
+        }
+    }
+
+    private static void App_DispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
+    {
+        ReportExceptionAsync(e.Exception, "Application.DispatcherUnhandledException");
+        e.Handled = true;
+    }
+
+    private static void TaskScheduler_UnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        ReportExceptionAsync(e.Exception, "TaskScheduler.UnobservedTaskException");
+        e.SetObserved();
+    }
+
+    private static async void ReportExceptionAsync(Exception exception, string source)
+    {
+        try
+        {
+            var bugReportService = BugReportService;
+            if (bugReportService != null)
+            {
+                await bugReportService.SendBugReportAsync(
+                    $"Unhandled exception caught by: {source}",
+                    ApplicationVersion,
+                    exception);
             }
         }
         catch
@@ -69,44 +159,9 @@ public partial class App
         }
     }
 
-    private string BuildExceptionReport(Exception exception, string source)
+    protected override void OnExit(ExitEventArgs e)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine(CultureInfo.InvariantCulture, $"Error Source: {source}");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"Date and Time: {DateTime.Now}");
-        sb.AppendLine(CultureInfo.InvariantCulture, $"OS Version: {Environment.OSVersion}");
-        sb.AppendLine(CultureInfo.InvariantCulture, $".NET Version: {Environment.Version}");
-        sb.AppendLine();
-
-        // Add exception details
-        sb.AppendLine("Exception Details:");
-        AppendExceptionDetails(sb, exception);
-
-        return sb.ToString();
-    }
-
-    private void AppendExceptionDetails(StringBuilder sb, Exception exception, int level = 0)
-    {
-        while (true)
-        {
-            var indent = new string(' ', level * 2);
-
-            sb.AppendLine(CultureInfo.InvariantCulture, $"{indent}Type: {exception.GetType().FullName}");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"{indent}Message: {exception.Message}");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"{indent}Source: {exception.Source}");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"{indent}StackTrace:");
-            sb.AppendLine(CultureInfo.InvariantCulture, $"{indent}{exception.StackTrace}");
-
-            // If there's an inner exception, include it too
-            if (exception.InnerException != null)
-            {
-                sb.AppendLine(CultureInfo.InvariantCulture, $"{indent}Inner Exception:");
-                exception = exception.InnerException;
-                level = level + 1;
-                continue;
-            }
-
-            break;
-        }
+        ServiceProvider.Dispose();
+        base.OnExit(e);
     }
 }
